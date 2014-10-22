@@ -32,6 +32,8 @@ as well as Adafruit raw 1.8" TFT display
 #endif
 
 #include <Adafruit_GFX.h>
+#include <avr/pgmspace.h>
+
 
 #if defined(__SAM3X8E__)
 #include <include/pio.h>
@@ -155,11 +157,16 @@ class Adafruit_ST7735 : public Adafruit_GFX {
   uint8_t  tabcolor;
 
   void     spiwrite(uint8_t),
+           spiwrite16(uint16_t),
+           spiwriteN(uint32_t, uint16_t),
            writecommand(uint8_t c),
            writedata(uint8_t d),
+           writedata_buf(uint8_t *pb, uint8_t cb),
            commandList(const uint8_t *addr),
            commonInit(const uint8_t *cmdList);
 //uint8_t  spiread(void);
+  void spi_begin(void) __attribute__((always_inline));
+  void spi_end(void) __attribute__((always_inline));
 
   boolean  hwSPI;
 
@@ -170,12 +177,47 @@ volatile uint8_t *dataport, *clkport, *csport, *rsport;
            colstart, rowstart; // some displays need this changed
 #endif //  #ifdef __AVR__
 
+#if defined (__ARDUINO_X86__)
+  uint8_t mySPCR;
+  int8_t  _cs, _rs, _rst;
+  uint8_t _sid, _sclk;
+  uint8_t colstart, rowstart; // some displays need this changed
+#endif
 #if defined(__SAM3X8E__)
   Pio *dataport, *clkport, *csport, *rsport;
   uint32_t  _cs, _rs, _rst, _sid, _sclk,
             datapinmask, clkpinmask, cspinmask, rspinmask,
             colstart, rowstart; // some displays need this changed
 #endif //  #if defined(__SAM3X8E__)
+  void DCHigh()  __attribute__((always_inline)) {
+#if defined( __ARDUINO_X86__)
+      digitalWrite(_rs, HIGH);
+#else
+      *rsport |=  rspinmask;
+#endif
+	}
+  void DCLow()  __attribute__((always_inline)) {
+#if defined( __ARDUINO_X86__)
+      digitalWrite(_rs, LOW);
+#else
+      *rsport &=  ~rspinmask;
+#endif
+	}
+
+  void CSHigh()  __attribute__((always_inline)) {
+#if defined( __ARDUINO_X86__)
+      digitalWrite(_cs, HIGH);
+#else
+      *csport |=  cspinmask;
+#endif
+	}
+  void CSLow()  __attribute__((always_inline)) {
+#if defined( __ARDUINO_X86__)
+      digitalWrite(_cs, LOW);
+#else
+      *csport &=  ~cspinmask;
+#endif
+	}
   
 };
 
